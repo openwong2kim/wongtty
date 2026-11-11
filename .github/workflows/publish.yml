@@ -20,10 +20,8 @@ jobs:
           targets: wasm32-unknown-unknown
       - uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           registry-url: https://registry.npmjs.org
-      # Trusted publishing needs npm 11.5.1 or later
-      - run: npm install -g npm@12.2.2
       - uses: taiki-e/install-action@v2
         with:
           tool: wasm-bindgen@0.2.129
@@ -38,5 +36,8 @@ jobs:
         working-directory: packages/wongtty
       - run: npm run test:web
         working-directory: packages/wongtty
+      # Trusted publishing needs npm 11.5.1 or later; the tests above run on the npm ci.yml uses, whose
+      # `npm pack --json` output dist.test.mjs reads
+      - run: npm install -g npm@12.2.2
       - run: npm publish --access public
         working-directory: packages/wongtty
