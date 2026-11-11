@@ -1,0 +1,42 @@
+name: publish
+
+# Publishes packages/wongtty to npm when a tag v<version> is pushed, through npm trusted publishing (OIDC):
+# no token is stored anywhere. The tag must match the package.json version.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  npm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm 11.5.1 or later
+      - run: npm install -g npm@12.2.2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen@0.2.129
+      - name: Tag matches package.json
+        working-directory: packages/wongtty
+        run: test "v$(node -p "require('./package.json').version")" = "$GITHUB_REF_NAME"
+      - run: bash scripts/build-wasm.sh
+      - run: bash scripts/build-web.sh
+      - run: npm ci
+        working-directory: packages/wongtty
+      - run: npm test
+        working-directory: packages/wongtty
+      - run: npm run test:web
+        working-directory: packages/wongtty
+      - run: npm publish --access public
+        working-directory: packages/wongtty
